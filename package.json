@@ -1,0 +1,16 @@
+{
+  "name": "slack-event-watcher",
+  "version": "0.0.1",
+  "description": "watch slack event",
+  "main": "app.js",
+  "scripts": {
+    "start": "node src/app.js"
+  },
+  "author": "kengo.inaba@e-seikatsu.co.jp",
+  "license": "ISC",
+  "dependencies": {
+    "koa": "^2.7.0",
+    "koa-bodyparser": "^4.2.1",
+    "slack": "^11.0.2"
+  }
+}
