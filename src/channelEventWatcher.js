@@ -39,6 +39,20 @@ const channelEventWatcher = {
       slack.chat.postMessage(request).then(console.log).catch(console.error);
     }
   },
+
+  emoji_changed_message_post: async (change_type, emoji_name) => {
+    const message = 'emoji ' + change_type + ' :' + emoji_name + ':';
+    const request = {
+      token: slack_bot_token,
+      channel: targetChannel, 
+      text: message
+    };
+    if (isDebug) {
+      console.log(request);
+    } else {
+      slack.chat.postMessage(request).then(console.log).catch(console.error);
+    }
+  },
 };
 
 module.exports = channelEventWatcher;

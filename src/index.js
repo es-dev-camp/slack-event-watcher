@@ -18,5 +18,17 @@ exports.slackEventWatcher = async (req, res) => {
       await channelEventWatcher.channel_unarchive_message_post(event.user, event.channel);
     }
   }
+
+  if (req.body) {
+    if (req.body.type === 'emoji_changed') {
+      let name = '';
+      if (req.body.subtype === 'remove') {
+        name = req.body.names.join(', ');
+      } else {
+        name = req.body.name;
+      }
+      await channelEventWatcher.emoji_changed_message_post(req.body.subtype, name);
+    }
+  }
   res.status(200).end();
 };
