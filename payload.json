@@ -1,0 +1,11 @@
+{
+  "event": {
+    "type": "channel_created",
+    "channel": {
+        "id": "CKNLJ6TK5",
+        "name": "hoge",
+        "created": 1360782804,
+        "creator": "UKZ4XDGUD"
+    }    
+  }
+}
