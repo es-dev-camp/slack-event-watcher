@@ -3,6 +3,12 @@ const channelEventWatcher = require('./channelEventWatcher');
 exports.slackEventWatcher = async (req, res) => {
 
   console.log(req.body);
+
+  if (req.body && req.body.type && req.body.type === 'url_verification') {
+    res.status(200).send({"challenge": req.body.challenge});
+    return;
+  }
+
   if (req.body && req.body.event && req.body.event.type) {
     const event = req.body.event;
     if (event.type === 'channel_created') {
