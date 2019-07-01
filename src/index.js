@@ -17,17 +17,14 @@ exports.slackEventWatcher = async (req, res) => {
     if (event.type === 'channel_unarchive') {
       await channelEventWatcher.channel_unarchive_message_post(event.user, event.channel);
     }
-  }
-
-  if (req.body) {
-    if (req.body.type === 'emoji_changed') {
+    if (event.type === 'emoji_changed') {
       let name = '';
-      if (req.body.subtype === 'remove') {
-        name = req.body.names.join(', ');
+      if (event.subtype === 'remove') {
+        name = event.names.join(', ');
       } else {
-        name = req.body.name;
+        name = event.name;
       }
-      await channelEventWatcher.emoji_changed_message_post(req.body.subtype, name);
+      await channelEventWatcher.emoji_changed_message_post(event.subtype, name);
     }
   }
   res.status(200).end();
