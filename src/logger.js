@@ -27,7 +27,7 @@ exports.createLogger = (logName) => {
       return await write('DEBUG', object);
     },
     info: async (object) => {
-      return await write('DEBUG', object);
+      return await write('INFO', object);
     },
     warn: async (object) => {
       return await write('WARNING', object);
