@@ -1,6 +1,8 @@
 const Slack = require('slack');
 const SlackMention = require('./util/createSlackMentionText');
+const logging = require('./logger');
 
+const logger = logging.createLogger('slackEventWatcher.log');
 const slack = new Slack();
 
 const slack_bot_token = process.env.BOT_TOKEN;
@@ -19,9 +21,9 @@ const channelEventWatcher = {
       text: message
     };
     if (isDebug) {
-      console.log(request);
+      logger.debug(request);
     } else {
-      slack.chat.postMessage(request).then(console.log).catch(console.error);
+      slack.chat.postMessage(request).then(logger.info).catch(logger.error);
     }
   },
 
@@ -35,9 +37,9 @@ const channelEventWatcher = {
       text: message
     };
     if (isDebug) {
-      console.log(request);
+      logger.debug(request);
     } else {
-      slack.chat.postMessage(request).then(console.log).catch(console.error);
+      slack.chat.postMessage(request).then(logger.info).catch(logger.error);
     }
   },
 
@@ -49,9 +51,9 @@ const channelEventWatcher = {
       text: message
     };
     if (isDebug) {
-      console.log(request);
+      logger.debug(request);
     } else {
-      slack.chat.postMessage(request).then(console.log).catch(console.error);
+      slack.chat.postMessage(request).then(logger.info).catch(logger.error);
     }
   },
 
@@ -64,7 +66,7 @@ const channelEventWatcher = {
       token: slack_bot_token,
       channel: channelId,
     }
-    const channelInfo = await slack.channels.info(channel);
+    const channelInfo = await slack.channels.info(channel).catch(logger.error);
     if (!channelInfo.channel.name.endsWith('_now')) {
       return;
     }
@@ -82,9 +84,9 @@ const channelEventWatcher = {
       text: message
     };
     if (isDebug) {
-      console.log(request);
+      logger.debug(request);
     } else {
-      slack.chat.postMessage(request).then(console.log).catch(console.error);
+      slack.chat.postMessage(request).then(logger.info).catch(logger.error);
     }
   },
 };
