@@ -1,8 +1,10 @@
 const channelEventWatcher = require('./channelEventWatcher');
+const logging = require('./logger');
+const logger = logging.createLogger('api.log');
 
 exports.slackEventWatcher = async (req, res) => {
 
-  console.log(req.body);
+  logger.info(req.body);
 
   if (req.body && req.body.type && req.body.type === 'url_verification') {
     res.status(200).send({"challenge": req.body.challenge});
