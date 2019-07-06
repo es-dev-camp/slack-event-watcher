@@ -5,8 +5,6 @@ const logger = logging.createLogger('appLogger.log');
 
 const index = require('./index');
 
-process.env.IS_DEBUG = true;
-
 const app = new Koa();
 app.use(bodyParser());
 

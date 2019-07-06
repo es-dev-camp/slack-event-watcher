@@ -14,7 +14,7 @@ exports.createLogger = (logName) => {
     },
     severity: 'DEFAULT',
   };
-  const write = process.env.IS_DEBUG
+  const write = !process.env.IS_DEBUG
     ? async (severity, object) => {
       logMetadata.severity = severity;
       await log.write(log.entry(logMetadata, object));
