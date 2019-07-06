@@ -4,7 +4,8 @@
   "description": "watch slack event",
   "main": "src/index.js",
   "scripts": {
-    "start": "node src/index.js"
+    "start": "node src/index.js",
+    "serve": "IS_DEBUG=true node src/app.js"
   },
   "author": "kengop@gmail.com",
   "license": "ISC",
