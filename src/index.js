@@ -31,6 +31,8 @@ exports.slackEventWatcher = async (req, res) => {
     if (event.type === 'message') {
       if (!event.subtype) {
         await channelEventWatcher.now_channel_message_post(event);
+      } else if (event.subtype === 'message_changed') {
+        await channelEventWatcher.message_changed(event);
       }
     }
   }

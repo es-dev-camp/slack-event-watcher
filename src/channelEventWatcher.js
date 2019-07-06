@@ -94,6 +94,40 @@ const channelEventWatcher = {
       slack.chat.postMessage(postMessageReq).then(logger.info).catch(logger.error);
     }
   },
+  message_changed: async (event) => {
+    // HOW TO WORK
+    // 1. user post message in *_now & bot post permalink in all_now
+    // 2. slack unfurl permalink (message_changed) & bot update text to empty
+
+    // NOTE: streamChannelのみかつ自分のメッセージのみ反応する
+    if (event.channel !== streamChannel
+      || event.message.subtype !== 'bot_message'
+      || event.message.bot_id !== botId) {
+      return;
+    }
+
+    // WARNING: message_changed に反応してさらにmessageを更新するため無限ループには注意
+    // textを完全に空にすると、attachmentsやlink_namesがupdateReqに必要になることに加えて
+    // Slack上でメッセージリンクが機能しなくなる。
+    // そのため、半角スペースでアップデートすると空行が表示されないSlack側の仕様を勝手に利用
+    const slipText = ' ';
+    if (event.message.text === slipText) {
+      return;
+    }
+
+    const updateMessageReq = {
+      token: slack_bot_token,
+      channel: streamChannel,
+      text: slipText,
+      ts: event.message.ts,
+    };
+
+    if (isDebug) {
+      logger.debug(updateMessageReq);
+    } else {
+      slack.chat.update(updateMessageReq).then(logger.info).catch(logger.error);
+    }
+  },
 };
 
 module.exports = channelEventWatcher;
