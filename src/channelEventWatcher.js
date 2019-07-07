@@ -110,15 +110,15 @@ const channelEventWatcher = {
     // textを完全に空にすると、attachmentsやlink_namesがupdateReqに必要になることに加えて
     // Slack上でメッセージリンクが機能しなくなる。
     // そのため、半角スペースでアップデートすると空行が表示されないSlack側の仕様を勝手に利用
-    const slipText = ' ';
-    if (event.message.text === slipText) {
+    const skipText = ' ';
+    if (event.message.text === skipText) {
       return;
     }
 
     const updateMessageReq = {
       token: slack_bot_token,
       channel: streamChannel,
-      text: slipText,
+      text: skipText,
       ts: event.message.ts,
     };
 
