@@ -9,6 +9,7 @@ const slack_bot_token = process.env.BOT_TOKEN;
 const targetChannel = !slack_bot_token ? 'CKZGKHBV2' : 'CKSPDU47K';
 const streamChannel = 'CL1475Z16';
 const isDebug = !slack_bot_token;
+const botId = 'BKZGSLX0C';
 
 const channelEventWatcher = {
   channel_created_message_post: async (creator, channel) => {
@@ -57,36 +58,74 @@ const channelEventWatcher = {
     }
   },
 
-  now_channel_message_post: async (channelId, userId, text) => {
+  now_channel_message_post: async (event) => {
+    const channelId = event.channel;
     if (channelId === streamChannel) {
       return;
     }
 
-    const channel = {
+    const channelInfoReq = {
       token: slack_bot_token,
       channel: channelId,
     }
-    const channelInfo = await slack.channels.info(channel).catch(logger.error);
-    if (!channelInfo.channel.name.endsWith('_now')) {
+    const channelInfoRes = await slack.channels.info(channelInfoReq)
+      .catch(logger.error);
+    if (!channelInfoRes.channel.name.endsWith('_now')) {
       return;
     }
 
-    const user = {
+    const permalinkReq = {
       token: slack_bot_token,
-      user: userId,
+      channel: event.channel,
+      message_ts: event.ts
     }
-    const userInfo = await slack.users.info(user);
+    const permalinkRes = await slack.chat.getPermalink(permalinkReq)
+      .catch(logger.error);
 
-    const message = userInfo.user.profile.display_name + ' ' + SlackMention.channel(channelId) + '\n' + text;
-    const request = {
+    const postMessageReq = {
       token: slack_bot_token,
       channel: streamChannel,
-      text: message
+      text: permalinkRes.permalink,
+      unfurl_links: true
     };
     if (isDebug) {
-      logger.debug(request);
+      logger.debug(postMessageReq);
     } else {
-      slack.chat.postMessage(request).then(logger.info).catch(logger.error);
+      slack.chat.postMessage(postMessageReq).then(logger.info).catch(logger.error);
+    }
+  },
+  message_changed: async (event) => {
+    // HOW TO WORK
+    // 1. user post message in *_now & bot post permalink in all_now
+    // 2. slack unfurl permalink (message_changed) & bot update text to empty
+
+    // NOTE: streamChannelのみかつ自分のメッセージのみ反応する
+    if (event.channel !== streamChannel
+      || event.message.subtype !== 'bot_message'
+      || event.message.bot_id !== botId) {
+      return;
+    }
+
+    // WARNING: message_changed に反応してさらにmessageを更新するため無限ループには注意
+    // textを完全に空にすると、attachmentsやlink_namesがupdateReqに必要になることに加えて
+    // Slack上でメッセージリンクが機能しなくなる。
+    // そのため、半角スペースでアップデートすると空行が表示されないSlack側の仕様を勝手に利用
+    const slipText = ' ';
+    if (event.message.text === slipText) {
+      return;
+    }
+
+    const updateMessageReq = {
+      token: slack_bot_token,
+      channel: streamChannel,
+      text: slipText,
+      ts: event.message.ts,
+    };
+
+    if (isDebug) {
+      logger.debug(updateMessageReq);
+    } else {
+      slack.chat.update(updateMessageReq).then(logger.info).catch(logger.error);
     }
   },
 };

@@ -29,7 +29,11 @@ exports.slackEventWatcher = async (req, res) => {
       await channelEventWatcher.emoji_changed_message_post(event.subtype, name);
     }
     if (event.type === 'message') {
-      await channelEventWatcher.now_channel_message_post(event.channel, event.user, event.text);
+      if (!event.subtype) {
+        await channelEventWatcher.now_channel_message_post(event);
+      } else if (event.subtype === 'message_changed') {
+        await channelEventWatcher.message_changed(event);
+      }
     }
   }
   res.status(200).end();
