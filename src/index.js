@@ -3,6 +3,11 @@ const logging = require('./logger');
 const logger = logging.createLogger('api.log');
 
 exports.slackEventWatcher = async (req, res) => {
+  const result = isSkipRequest(req);
+  if (result) {
+    res.status(200).end();
+    return;
+  }
 
   logger.info(req.body);
 
@@ -38,3 +43,18 @@ exports.slackEventWatcher = async (req, res) => {
   }
   res.status(200).end();
 };
+
+function isSkipRequest(req) {
+  const slackRetryNum = req.get('X-Slack-Retry-Num');
+  const slackRetryReason = req.get('X-Slack-Retry-Reason');
+  if (slackRetryNum) {
+    logger.info({
+      status: 'Request retried.',
+      event_id: req.body.event_id,
+      retry_num: slackRetryNum,
+      retry_reason: slackRetryReason
+    });
+    return true;
+  }
+  return false;
+}
