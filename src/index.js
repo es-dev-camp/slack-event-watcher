@@ -3,6 +3,9 @@ const logging = require('./logger');
 const logger = logging.createLogger('api.log');
 
 exports.slackEventWatcher = async (req, res) => {
+  process.env['Function-Execution-Id'] = req.get('Function-Execution-Id');
+  process.env['X-Cloud-Trace-Context'] = req.get('X-Cloud-Trace-Context');
+
   const result = isSkipRequest(req);
   if (result) {
     res.status(200).end();
