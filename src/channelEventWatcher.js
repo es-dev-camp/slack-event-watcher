@@ -1,8 +1,7 @@
 const Slack = require('slack');
 const SlackMention = require('./util/createSlackMentionText');
-const logging = require('./logger');
+const LoggerFactory = require('./logger');
 
-const logger = logging.createLogger('slackEventWatcher.log');
 const slack = new Slack();
 
 const slack_bot_token = process.env.BOT_TOKEN;
@@ -11,8 +10,15 @@ const streamChannel = 'CL1475Z16';
 const isDebug = !slack_bot_token;
 const botId = 'BKZGSLX0C';
 
-const channelEventWatcher = {
-  channel_created_message_post: async (creator, channel) => {
+
+module.exports = class ChannelEventWatcher {
+
+  constructor() {
+    const f = new LoggerFactory();
+    this.logger = f.create('slackEventWatcher.log');
+  }
+
+  async channel_created_message_post(creator, channel) {
     const creatorMentionText = SlackMention.user(creator);
     const channelMentionText = SlackMention.channel(channel);
     const message = 'new channel *' + channelMentionText + '* is created by ' + creatorMentionText;
@@ -22,13 +28,13 @@ const channelEventWatcher = {
       text: message
     };
     if (isDebug) {
-      logger.debug(request);
+      this.logger.debug(request);
     } else {
-      slack.chat.postMessage(request).then(logger.info).catch(logger.error);
+      slack.chat.postMessage(request).then(this.logger.info).catch(this.logger.error);
     }
-  },
+  }
 
-  channel_unarchive_message_post: async (user, channel) => {
+  async channel_unarchive_message_post(user, channel) {
     const userMentionText = SlackMention.user(user);
     const channelMentionText = SlackMention.channel(channel);
     const message = '*' + channelMentionText + '* is unarchived by ' + userMentionText;
@@ -38,13 +44,13 @@ const channelEventWatcher = {
       text: message
     };
     if (isDebug) {
-      logger.debug(request);
+      this.logger.debug(request);
     } else {
-      slack.chat.postMessage(request).then(logger.info).catch(logger.error);
+      slack.chat.postMessage(request).then(this.logger.info).catch(this.logger.error);
     }
-  },
+  }
 
-  emoji_changed_message_post: async (change_type, emoji_name) => {
+  async emoji_changed_message_post(change_type, emoji_name) {
     const message = 'emoji ' + change_type + ' :' + emoji_name + ':';
     const request = {
       token: slack_bot_token,
@@ -52,13 +58,13 @@ const channelEventWatcher = {
       text: message
     };
     if (isDebug) {
-      logger.debug(request);
+      this.logger.debug(request);
     } else {
-      slack.chat.postMessage(request).then(logger.info).catch(logger.error);
+      slack.chat.postMessage(request).then(this.logger.info).catch(this.logger.error);
     }
-  },
+  }
 
-  now_channel_message_post: async (event) => {
+  async now_channel_message_post(event) {
     const channelId = event.channel;
     if (channelId === streamChannel) {
       return;
@@ -69,7 +75,7 @@ const channelEventWatcher = {
       channel: channelId,
     }
     const channelInfoRes = await slack.channels.info(channelInfoReq)
-      .catch(logger.error);
+      .catch(this.logger.error);
     if (!channelInfoRes.channel.name.endsWith('_now')) {
       return;
     }
@@ -80,7 +86,7 @@ const channelEventWatcher = {
       message_ts: event.ts
     }
     const permalinkRes = await slack.chat.getPermalink(permalinkReq)
-      .catch(logger.error);
+      .catch(this.logger.error);
 
     const postMessageReq = {
       token: slack_bot_token,
@@ -89,12 +95,13 @@ const channelEventWatcher = {
       unfurl_links: true
     };
     if (isDebug) {
-      logger.debug(postMessageReq);
+      this.logger.debug(postMessageReq);
     } else {
-      slack.chat.postMessage(postMessageReq).then(logger.info).catch(logger.error);
+      slack.chat.postMessage(postMessageReq).then(this.logger.info).catch(this.logger.error);
     }
-  },
-  message_changed: async (event) => {
+  }
+
+  async message_changed(event) {
     // HOW TO WORK
     // 1. user post message in *_now & bot post permalink in all_now
     // 2. slack unfurl permalink (message_changed) & bot update text to empty
@@ -123,11 +130,10 @@ const channelEventWatcher = {
     };
 
     if (isDebug) {
-      logger.debug(updateMessageReq);
+      this.logger.debug(updateMessageReq);
     } else {
-      slack.chat.update(updateMessageReq).then(logger.info).catch(logger.error);
+      slack.chat.update(updateMessageReq).then(this.logger.info).catch(this.logger.error);
     }
-  },
-};
+  }
 
-module.exports = channelEventWatcher;
+}

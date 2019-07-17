@@ -1,13 +1,19 @@
-const channelEventWatcher = require('./channelEventWatcher');
-const logging = require('./logger');
-const logger = logging.createLogger('api.log');
+const ChannelEventWatcher = require('./channelEventWatcher');
+const LoggerFactory = require('./logger');
 
 exports.slackEventWatcher = async (req, res) => {
-  const result = isSkipRequest(req);
+  const f = new LoggerFactory({
+    executionId: req.get('Function-Execution-Id'),
+    traceContext: req.get('X-Cloud-Trace-Context'),
+  });
+  const logger = f.create('api.log');
+
+  const result = isSkipRequest(logger, req);
   if (result) {
     res.status(200).end();
     return;
   }
+  const channelEventWatcher = new ChannelEventWatcher();
 
   logger.info(req.body);
 
@@ -44,7 +50,7 @@ exports.slackEventWatcher = async (req, res) => {
   res.status(200).end();
 };
 
-function isSkipRequest(req) {
+function isSkipRequest(logger, req) {
   const slackRetryNum = req.get('X-Slack-Retry-Num');
   const slackRetryReason = req.get('X-Slack-Retry-Reason');
   if (slackRetryNum) {
