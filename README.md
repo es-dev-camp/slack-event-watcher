@@ -5,7 +5,7 @@
 `.env.yaml` に 正式な値をセットしたうえで実行する
 
 ```sh
-gcloud beta functions deploy slackEventWatcher --trigger-http --runtime nodejs8 --allow-unauthenticated --env-vars-file .env.yaml --project slack-bot-creator
+gcloud functions deploy slackEventWatcher --trigger-http --runtime nodejs12 --allow-unauthenticated --env-vars-file .env.yaml --project slack-bot-creator
 ```
 
 ## テスト

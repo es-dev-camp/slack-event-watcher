@@ -1,21 +1,23 @@
-const Slack = require('slack');
+const { App } = require('@slack/bolt');
+
 const SlackMention = require('./util/createSlackMentionText');
-const LoggerFactory = require('./logger');
 
-const slack = new Slack();
+const app = new App({
+  signingSecret: process.env.SLACK_SIGNING_SECRET,
+  token: process.env.SLACK_BOT_TOKEN,
+});
 
-const slack_bot_token = process.env.BOT_TOKEN;
-const targetChannel = !slack_bot_token ? 'CKZGKHBV2' : 'CKSPDU47K';
-const streamChannel = 'CL1475Z16';
-const isDebug = !slack_bot_token;
-const botId = 'BKZGSLX0C';
-
+const slack = app.client;
+const slack_bot_token = process.env.SLACK_BOT_TOKEN;
+const generalChannel = process.env.APP_CHANNEL_GENERAL;
+const allNowChannel = process.env.APP_CHANNEL_ALLNOW;
+const botId = process.env.APP_SLACK_ID;
+const isDebug = process.env.DEBUG === "true";
 
 module.exports = class ChannelEventWatcher {
 
-  constructor() {
-    const f = new LoggerFactory();
-    this.logger = f.create('slackEventWatcher.log');
+  constructor(logger) {
+    this.logger = logger;
   }
 
   async channel_created_message_post(creator, channel) {
@@ -23,14 +25,13 @@ module.exports = class ChannelEventWatcher {
     const channelMentionText = SlackMention.channel(channel);
     const message = 'new channel *' + channelMentionText + '* is created by ' + creatorMentionText;
     const request = {
-      token: slack_bot_token,
-      channel: targetChannel, 
+      channel: generalChannel, 
       text: message
     };
     if (isDebug) {
       this.logger.debug(request);
     } else {
-      slack.chat.postMessage(request).then(this.logger.info).catch(this.logger.error);
+      await slack.chat.postMessage(request).then(this.logger.info).catch(this.logger.error);
     }
   }
 
@@ -40,13 +41,29 @@ module.exports = class ChannelEventWatcher {
     const message = '*' + channelMentionText + '* is unarchived by ' + userMentionText;
     const request = {
       token: slack_bot_token,
-      channel: targetChannel, 
+      channel: generalChannel, 
       text: message
     };
     if (isDebug) {
       this.logger.debug(request);
     } else {
-      slack.chat.postMessage(request).then(this.logger.info).catch(this.logger.error);
+      await slack.chat.postMessage(request).then(this.logger.info).catch(this.logger.error);
+    }
+  }
+
+  async channel_archive_message_post(user, channel) {
+    const userMentionText = SlackMention.user(user);
+    const channelMentionText = SlackMention.channel(channel);
+    const message = '*' + channelMentionText + '* is archived by ' + userMentionText;
+    const request = {
+      token: slack_bot_token,
+      channel: generalChannel, 
+      text: message
+    };
+    if (isDebug) {
+      this.logger.debug(request);
+    } else {
+      await slack.chat.postMessage(request).then(this.logger.info).catch(this.logger.error);
     }
   }
 
@@ -54,28 +71,29 @@ module.exports = class ChannelEventWatcher {
     const message = 'emoji ' + change_type + ' :' + emoji_name + ':';
     const request = {
       token: slack_bot_token,
-      channel: targetChannel, 
+      channel: generalChannel, 
       text: message
     };
     if (isDebug) {
       this.logger.debug(request);
     } else {
-      slack.chat.postMessage(request).then(this.logger.info).catch(this.logger.error);
+      await slack.chat.postMessage(request).then(this.logger.info).catch(this.logger.error);
     }
   }
 
   async now_channel_message_post(event) {
     const channelId = event.channel;
-    if (channelId === streamChannel) {
+    if (channelId === allNowChannel) {
       return;
     }
 
-    const channelInfoReq = {
-      token: slack_bot_token,
-      channel: channelId,
+    const channelInfoRes = await slack.conversations.info({channel: channelId})
+      .catch(async e => {
+        this.logger.error(e);
+      });
+    if (!channelInfoRes) {
+      throw new Error('can\'t get channel info');
     }
-    const channelInfoRes = await slack.channels.info(channelInfoReq)
-      .catch(this.logger.error);
     if (!channelInfoRes.channel.name.endsWith('_now')) {
       return;
     }
@@ -86,11 +104,13 @@ module.exports = class ChannelEventWatcher {
       message_ts: event.ts
     }
     const permalinkRes = await slack.chat.getPermalink(permalinkReq)
-      .catch(this.logger.error);
+      .catch(x => {
+        this.logger.error(x);
+      });
 
     const postMessageReq = {
       token: slack_bot_token,
-      channel: streamChannel,
+      channel: allNowChannel,
       text: permalinkRes.permalink,
       unfurl_links: true
     };
@@ -106,8 +126,8 @@ module.exports = class ChannelEventWatcher {
     // 1. user post message in *_now & bot post permalink in all_now
     // 2. slack unfurl permalink (message_changed) & bot update text to empty
 
-    // NOTE: streamChannelのみかつ自分のメッセージのみ反応する
-    if (event.channel !== streamChannel
+    // NOTE: allNowChannelのみかつ自分のメッセージのみ反応する
+    if (event.channel !== allNowChannel
       || event.message.subtype !== 'bot_message'
       || event.message.bot_id !== botId) {
       return;
@@ -124,7 +144,7 @@ module.exports = class ChannelEventWatcher {
 
     const updateMessageReq = {
       token: slack_bot_token,
-      channel: streamChannel,
+      channel: allNowChannel,
       text: skipText,
       ts: event.message.ts,
     };
